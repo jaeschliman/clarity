@@ -19,4 +19,5 @@
    (:file "affine-0")
    (:file "affine-1")
    (:file "utils-0")
+   (:file "vector")
    ))
