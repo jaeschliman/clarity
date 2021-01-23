@@ -1,6 +1,7 @@
 (defpackage :coffee.umbrella.clarity.datastream (:use :cl :alexandria
                                                       :coffee.umbrella.model :coffee.umbrella.utils)
             (:export
+             #:datastream
              #:transform-datastream
              #:send
              #:add-listener
