@@ -14,4 +14,8 @@
                "trivial-package-local-nicknames"
                "swank")
   :serial t
-  :components ((:file "dot-access")))
+  :components
+  ((:file "dot-access")
+   (:file "affine-0")
+   (:file "affine-1")
+   ))
