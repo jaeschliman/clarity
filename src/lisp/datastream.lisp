@@ -1,5 +1,5 @@
-(defpackage :coffee.umbrella.datastream (:use :cl :alexandria
-                                              :coffee.umbrella.model :coffee.umbrella.utils)
+(defpackage :coffee.umbrella.clarity.datastream (:use :cl :alexandria
+                                                      :coffee.umbrella.model :coffee.umbrella.utils)
             (:export
              #:transform-datastream
              #:send
@@ -9,7 +9,7 @@
              #:receive
              #:signal-termination
              #:stop-listening))
-(in-package :coffee.umbrella.datastream)
+(in-package :coffee.umbrella.clarity.datastream)
 
 (define-model datastream ()
     ((parent-stream nil)
