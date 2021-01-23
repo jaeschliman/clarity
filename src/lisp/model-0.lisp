@@ -1,6 +1,8 @@
 (defpackage :coffee.umbrella.model (:use :cl :alexandria :trivial-garbage :coffee.umbrella.dot-access :coffee.umbrella.utils)
             (:export
-             #:define-model))
+             #:define-model
+             #:have
+             #:have-slot))
 (in-package :coffee.umbrella.model)
 
 ;; package for defining classes with a shorthand, support for dot-access, and change detection
