@@ -1,4 +1,6 @@
-(defpackage :coffee.umbrella.affine (:use :cl :alexandria) (:shadow #:rotate))
+(defpackage :coffee.umbrella.affine (:use :cl :alexandria) (:shadow #:rotate)
+            (:export
+             #:component-values))
 (in-package :coffee.umbrella.affine)
 
 (deftype affine () '(simple-vector 9))
