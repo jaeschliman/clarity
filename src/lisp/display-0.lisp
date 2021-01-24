@@ -100,13 +100,6 @@
 
 (defstruct captured-output)
 
-(defmacro display-with-captured-output ((var) &body body)
-  (check-type var symbol)
-  `(let ((,var (make-rendercode-display :output (make-deferred-render-stream))))
-     (prog1 (display-output ,var)
-       (unwind-protect (progn ,@body)
-         (display-flush ,var)))))
-
 (defmacro display-with-group ((var) &body body)
   (once-only (var)
     `(unwind-protect
