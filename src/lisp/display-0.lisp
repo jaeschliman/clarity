@@ -4,7 +4,23 @@
   (:shadow #:rotate)
   (:local-nicknames
    (:datastream :coffee.umbrella.clarity.datastream)
-   (:affine :coffee.umbrella.affine)))
+   (:affine :coffee.umbrella.affine))
+  (:export
+   #:*display*
+   #:with-group
+   #:with-clip-group
+   #:translate
+   #:rotate
+   #:scale
+   #:set-fill
+   #:clear-screen
+   #:set-font-size
+   #:set-monospace
+   #:set-variable-width
+   #:poly
+   #:qpoly
+   #:reserve
+   #:text))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package
