@@ -20,10 +20,13 @@
    #:poly
    #:qpoly
    #:reserve
-   #:text))
+   #:text
+   #:write-buffer))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package
+;;
+;; used by the drawing package (not a user package)
 ;;
 ;; encodes drawing commands into a bytecode format, which is then interpreted
 ;; by visual display as it sees fit
@@ -32,7 +35,7 @@
 ;; (e.g. filling a poly, but not a poly-line)
 ;; adding more is easy, but not the current priority
 ;;
-;; TODO: move models to define-model, clean up exports removing the display- prefix
+;; TODO: move models to define-model
 
 (defvar *display* nil)
 

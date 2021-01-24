@@ -27,4 +27,5 @@
    (:file "font")
    (:file "display-0")
    (:file "display-1")
+   (:file "draw")
    ))
