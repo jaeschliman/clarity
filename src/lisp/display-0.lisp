@@ -1,8 +1,10 @@
-(defpackage :coffee.umbrella.clarity.display (:use :cl :alexandria
-                                                   :coffee.umbrella.model :coffee.umbrella.utils)
-            (:local-nicknames
-             (:datastream :coffee.umbrella.clarity.datastream)
-             (:affine :coffee.umbrella.affine)))
+(defpackage :coffee.umbrella.clarity.display
+  (:use :cl :alexandria
+        :coffee.umbrella.model :coffee.umbrella.utils)
+  (:shadow #:rotate)
+  (:local-nicknames
+   (:datastream :coffee.umbrella.clarity.datastream)
+   (:affine :coffee.umbrella.affine)))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package
@@ -69,7 +71,7 @@
 (defmethod send-output ((rd rendercode-display) output (ds datastream:datastream))
   (datastream:send output ds))
 
-(defmethod display-flush ((rd rendercode-display))
+(defmethod flush ((rd rendercode-display))
   (with-slots (stream) (rendercode-display-codestream rd)
     (let ((output (slot-value stream 'vector)))
       (when (> (length output) 0)
@@ -83,7 +85,7 @@
         (display-output rd)))))
 
 ;; append rendercode in buffer to this display
-(defun display-write-buffer (rd buffer)
+(defun write-buffer (rd buffer)
   (declare (optimize speed (debug 1) (space 0) (compilation-speed 0))
            (type (array (unsigned-byte 8)) buffer))
   (let* ((out (rendercode-display-codestream rd))
@@ -100,14 +102,14 @@
 
 (defstruct captured-output)
 
-(defmacro display-with-group ((var) &body body)
+(defmacro with-group ((var) &body body)
   (once-only (var)
     `(unwind-protect
           (progn (start-group ,var)
                  ,@body)
        (end-group ,var))))
 
-(defmacro display-with-clip-group ((var) &body body)
+(defmacro with-clip-group ((var) &body body)
   (once-only (var)
     `(unwind-protect
           (progn (start-clip-group ,var)
@@ -124,7 +126,7 @@
     (unwind-protect (prog1 buffer (funcall thunk))
       (setf (slot-value stream 'vector) nil))))
 
-(defmacro with-display-output-to-buffer ((var) &body body)
+(defmacro with-output-to-buffer ((var) &body body)
   (with-gensyms (doit)
     `(labels ((,doit () ,@body))
       (declare (dynamic-extent #',doit))
