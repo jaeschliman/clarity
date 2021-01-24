@@ -1,12 +1,5 @@
 (in-package :coffee.umbrella.clarity.display)
 
-(declaim (inline rendercode-thing))
-(defun rendercode-thing (it)
-  (declare (optimize (speed 3) (safety 1)))
-  (etypecase it
-    (single-float (ieee-floats:encode-float32 it))
-    (fixnum       (ldb (byte 32 0) it))))
-
 (defconstant instr.fillpoly 0)
 (defconstant instr.cat-affine 1)
 (defconstant instr.set-fill 2)
@@ -23,7 +16,6 @@
 (defconstant instr.set-monospace 13)
 (defconstant instr.set-font-size 14)
 (defconstant instr.reserve-space 15)
-
 
 (defrendercode start-group instr.group-start ())
 (defrendercode start-clip-group instr.clipgroup-start ()
@@ -52,7 +44,6 @@
       (loop for i below len do
         (<<8 (char-code (char string i))))
       (loop repeat (- (* 4 (ceiling len 4)) len) do (<<8 0)))))
-
 
 (define-compiler-macro poly (&whole form display &rest xs-and-ys)
   (if (symbolp display)

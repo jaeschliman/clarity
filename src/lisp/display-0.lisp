@@ -132,6 +132,13 @@
       (declare (dynamic-extent #',doit))
       (%call-capturing-output ,var #',doit))))
 
+(declaim (inline rendercode-thing))
+(defun rendercode-thing (it)
+  (declare (optimize (speed 3) (safety 1)))
+  (etypecase it
+    (single-float (ieee-floats:encode-float32 it))
+    (fixnum       (ldb (byte 32 0) it))))
+
 (defmacro defrendercode (name code (&rest params) &body body)
     `(defun ,name (%display ,@params)
        (declare (optimize (speed 3) (safety 1)))
