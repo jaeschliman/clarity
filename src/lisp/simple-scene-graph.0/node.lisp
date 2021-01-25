@@ -320,3 +320,6 @@
                                                  (- outset)
                                                  (+ outset outset w)
                                                  (+ outset outset h))))
+
+(defun node-moveto (node x y)
+  (setf (node-pos node) (cons x y)))
