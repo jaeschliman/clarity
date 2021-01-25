@@ -32,4 +32,5 @@
     :serial t
     :components
     ((:file "package")
-     (:file "node")))))
+     (:file "node")
+     (:file "layout")))))
