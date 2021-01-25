@@ -2,7 +2,9 @@
   (:use :cl :alexandria :coffee.umbrella.utils :coffee.umbrella.clarity.font)
   (:local-nicknames
    (:display :coffee.umbrella.clarity.display))
-  (:import-from :coffee.umbrella.clarity.display #:*display*))
+  (:import-from :coffee.umbrella.clarity.display #:*display*)
+  (:export
+   #:moveby))
 (in-package :coffee.umbrella.clarity.draw)
 
 ;; drawing commands for user code that write to the current display

@@ -21,7 +21,8 @@
    #:qpoly
    #:reserve
    #:text
-   #:write-buffer))
+   #:write-buffer
+   #:affine-concat))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package

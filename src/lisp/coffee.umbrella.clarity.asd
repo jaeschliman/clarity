@@ -28,4 +28,8 @@
    (:file "display-0")
    (:file "display-1")
    (:file "draw")
-   ))
+   (:module "simple-scene-graph.0"
+    :serial t
+    :components
+    ((:file "package")
+     (:file "node")))))
