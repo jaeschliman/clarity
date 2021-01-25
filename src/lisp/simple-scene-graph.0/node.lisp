@@ -218,7 +218,7 @@
 
 (defmethod node-call-with-drawing-context ((n node) thunk)
   (declare (optimize (speed 3) (safety 1)))
-  (with-graphics-group ()
+  (draw:with-graphics-group ()
     (if (and (zerop (node-rotation n))
              (= 1.0 (car (node-scale n)))
              (= 1.0 (cdr (node-scale n))))

@@ -4,7 +4,8 @@
    (:display :coffee.umbrella.clarity.display))
   (:import-from :coffee.umbrella.clarity.display #:*display*)
   (:export
-   #:moveby))
+   #:moveby
+   #:with-graphics-group))
 (in-package :coffee.umbrella.clarity.draw)
 
 ;; drawing commands for user code that write to the current display
