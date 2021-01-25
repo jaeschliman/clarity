@@ -14,7 +14,7 @@
 (define-model layout.stretch-contents (layout.center-contents) ())
 (define-model layout.scale-contents (layout) ((x-align :center) (y-align :center)))
 
-
+(defvar *currently-laying-out* nil)
 
 ;; where force is not neccessarily a number -- could be an object
 (defgeneric node-natural-size-in-layout (node layout w h)) ; -> w, h, force, force
