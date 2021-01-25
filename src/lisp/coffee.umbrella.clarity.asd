@@ -24,6 +24,7 @@
    (:file "model-0")
    (:file "model-1")
    (:file "datastream")
+   (:file "mailbox")
    (:file "font")
    (:file "display-0")
    (:file "display-1")
