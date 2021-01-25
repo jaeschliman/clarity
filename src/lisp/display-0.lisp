@@ -22,7 +22,8 @@
    #:reserve
    #:text
    #:write-buffer
-   #:affine-concat))
+   #:affine-concat
+   #:flush))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package

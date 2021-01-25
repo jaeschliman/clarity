@@ -5,7 +5,22 @@
   (:import-from :coffee.umbrella.clarity.display #:*display*)
   (:export
    #:moveby
-   #:with-graphics-group))
+   #:with-graphics-group
+   #:box
+   #:cls
+   #:with-clip-shape
+   #:with-font
+   #:textat
+   #:rgba-fill
+   #:poly
+   #:clear-bounds
+   #:qpoly
+   #:rotateby
+   #:scaleby
+   #:reserve-box
+   #:lozenge
+   #:rounded-rect
+   #:text))
 (in-package :coffee.umbrella.clarity.draw)
 
 ;; drawing commands for user code that write to the current display

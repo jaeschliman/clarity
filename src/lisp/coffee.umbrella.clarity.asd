@@ -33,4 +33,6 @@
     :components
     ((:file "package")
      (:file "node")
-     (:file "layout")))))
+     (:file "layout")
+     (:file "device")
+     (:file "world")))))

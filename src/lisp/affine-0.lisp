@@ -3,7 +3,8 @@
              #:component-values
              #:make-affine
              #:load-standard-inverse-node-transform
-             #:load-standard-node-transform))
+             #:load-standard-node-transform
+             #:get-translation-rotation-and-scale))
 (in-package :coffee.umbrella.affine)
 
 (deftype affine () '(simple-vector 9))
