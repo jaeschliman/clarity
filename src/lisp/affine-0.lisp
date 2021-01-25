@@ -4,7 +4,9 @@
              #:make-affine
              #:load-standard-inverse-node-transform
              #:load-standard-node-transform
-             #:get-translation-rotation-and-scale))
+             #:get-translation-rotation-and-scale
+             #:transform-xy
+             #:four-points-contain-point?))
 (in-package :coffee.umbrella.affine)
 
 (deftype affine () '(simple-vector 9))
