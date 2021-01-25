@@ -311,6 +311,26 @@
        (node-layout-children ch w h)
        (node-finalize-layout ch)))))
 
+(defun region-load-bounds (x y w h output-region)
+  (declare (optimize (speed 3) (safety 1))
+           (type single-float x y w h)
+           (type (simple-vector 8) output-region))
+  (setf (aref output-region 0) x       (aref output-region 1) y
+        (aref output-region 2) (+ x w) (aref output-region 3) y
+        (aref output-region 4) (+ x w) (aref output-region 5) (+ y h)
+        (aref output-region 6) x       (aref output-region 7) (+ y h))
+  (values))
+
+(defun region-load (a b c d e f g h output-region)
+  (declare (optimize (speed 3) (safety 1))
+           (type single-float a b c d e f g)
+           (type (simple-vector 8) output-region))
+  (setf (aref output-region 0) a (aref output-region 1) b
+        (aref output-region 2) c (aref output-region 3) d
+        (aref output-region 4) e (aref output-region 5) f
+        (aref output-region 6) g (aref output-region 7) h)
+  (values))
+
 ;; TODO: break this up
 ;; apologies to the reader for the excessive macrology on this one
 (defmethod draw-world-view ((v world-view) (w world-node))
