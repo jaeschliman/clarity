@@ -36,4 +36,10 @@
      (:file "node")
      (:file "layout")
      (:file "device")
-     (:file "world")))))
+     (:file "world")))
+   (:module "connect"
+    :serial t
+    :components
+    ((:file "package")
+     (:file "code-0")
+     (:file "code-1")))))
