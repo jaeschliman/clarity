@@ -42,4 +42,5 @@
     :components
     ((:file "package")
      (:file "code-0")
-     (:file "code-1")))))
+     (:file "code-1")
+     (:file "socket")))))
