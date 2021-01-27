@@ -36,7 +36,8 @@
      (:file "node")
      (:file "layout")
      (:file "device")
-     (:file "world")))
+     (:file "world")
+     (:file "event-handling")))
    (:module "connect"
     :serial t
     :components

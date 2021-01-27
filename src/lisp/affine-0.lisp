@@ -6,7 +6,13 @@
              #:load-standard-node-transform
              #:get-translation-rotation-and-scale
              #:transform-xy
-             #:four-points-contain-point?))
+             #:four-points-contain-point?
+             #:l-translate
+             #:l-rotate
+             #:l-scale
+             #:translate
+             #:rotate
+             #:scale))
 (in-package :coffee.umbrella.affine)
 
 (deftype affine () '(simple-vector 9))
