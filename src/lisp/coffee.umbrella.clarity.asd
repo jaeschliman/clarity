@@ -43,4 +43,6 @@
     ((:file "package")
      (:file "code-0")
      (:file "code-1")
-     (:file "socket")))))
+     (:file "socket")
+     (:file "device-host-0")
+     (:file "device-host-1")))))
