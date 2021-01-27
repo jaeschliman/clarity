@@ -228,7 +228,7 @@
 
 (defun world-view-translate (node x y)
   (%world-view-translate node x y)
-  (setf (node-wants-redraw node) t)))
+  (setf (node-wants-redraw node) t))
 
 ;; radians, counter clockwise
 (defun world-view-rotate (node x y angle)
