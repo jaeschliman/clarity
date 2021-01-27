@@ -1,5 +1,9 @@
 (in-package :coffee.umbrella.clarity.connect)
 
+(defgeneric stop (thing))
+(defgeneric start (thing))
+(defgeneric restart! (thing))
+
 (define-model server ()
   ((ip "127.0.0.1" :type string)
    (port 1111 :type (unsigned-byte 16))
@@ -31,6 +35,11 @@
   ((datastream nil)
    (identifier nil)
    (connection nil)))
+
+(defmethod restart! ((self server))
+  (format t "restarting server ~A, you're welcome.~%" self)
+  (stop self)
+  (start self))
 
 (defun run-write-loop (self)
   (block write-loop
