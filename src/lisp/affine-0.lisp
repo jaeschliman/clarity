@@ -12,7 +12,8 @@
              #:l-scale
              #:translate
              #:rotate
-             #:scale))
+             #:scale
+             #:translation))
 (in-package :coffee.umbrella.affine)
 
 (deftype affine () '(simple-vector 9))

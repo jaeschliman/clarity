@@ -132,7 +132,7 @@
             (multiple-value-bind (dx dy)
                 (node-transform-into-local-space xf rdx rdy)
               ;; ok, this is a bit much to have in here, but let's see!
-              (multiple-value-bind (tx ty) (cu.affine::affine-translation (.affine xf))
+              (multiple-value-bind (tx ty) (affine:translation (.affine xf))
                 (let ((dx (- dx tx))
                       (dy (- dy ty)))
                   (setq event (list :scroll motion x y dx dy))))))))
