@@ -1,5 +1,5 @@
 (defpackage :coffee.umbrella.clarity.connect
-  (:use :cl :alexandria
+  (:use :cl :alexandria :trivia
         :bordeaux-threads
         :trivial-garbage
         :coffee.umbrella.utils
