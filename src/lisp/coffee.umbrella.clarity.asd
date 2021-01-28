@@ -38,7 +38,8 @@
      (:file "layout")
      (:file "device")
      (:file "world")
-     (:file "event-handling")))
+     (:file "event-handling")
+     (:file "misc")))
    (:module "connect"
     :serial t
     :components
