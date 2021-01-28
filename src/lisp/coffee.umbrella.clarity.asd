@@ -19,6 +19,7 @@
    (:file "affine-0")
    (:file "affine-1")
    (:file "utils-0")
+   (:file "utils-1")
    (:file "vector")
    (:file "string")
    (:file "model-0")

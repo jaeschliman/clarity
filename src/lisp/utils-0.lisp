@@ -4,7 +4,10 @@
              #:rev-doseq
              #:&&
              #:&fn
-             #:&))
+             #:&
+             #:aref2
+             #:plist-set
+             #:quantize))
 (in-package :coffee.umbrella.utils)
 
 (defmacro doseq ((var form &optional result) &body body)
