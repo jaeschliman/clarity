@@ -15,4 +15,17 @@
    )
   (:export
    #:*current-display-device*
-   #:*display*))
+   #:*display*
+   #:with-active-world
+   #:device.display
+   #:device.keyboard
+   #:world-active-simulation-count
+   #:world-dispatch-event
+   #:world-simulate
+   #:*world*
+   #:world-start-frame
+   #:world-end-frame
+   #:draw-world
+   #:force-redraw
+   #:world-make-index-for-child
+   #:modifier-state-reset-for-disconnect))

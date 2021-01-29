@@ -23,7 +23,8 @@
    #:text
    #:write-buffer
    #:affine-concat
-   #:flush))
+   #:flush
+   #:make-rendercode-display))
 (in-package :coffee.umbrella.clarity.display)
 
 ;; the 'display' package

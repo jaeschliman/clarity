@@ -9,4 +9,8 @@
    (:mbox :coffee.umbrella.mailbox)
    (:datastream :coffee.umbrella.clarity.datastream))
   (:export
-   #:ensure-global-device-server))
+   #:ensure-global-device-server
+   #:attach-host
+   #:request-autoconnect
+   #:detach-host
+   #:create-simple-device-host))
