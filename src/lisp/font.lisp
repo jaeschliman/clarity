@@ -9,7 +9,9 @@
              #:font-measure-line
              #:font-mono-glyph-width
              #:font-mono-glyph-line-height
-             #:font-mono-glyph-height))
+             #:font-mono-glyph-height
+             #:character-width
+             #:character-height))
 (in-package :coffee.umbrella.clarity.font)
 
 ;; very basic font support.
@@ -70,3 +72,11 @@
   (multiple-value-bind (w h) (font-measure-line (font-variant-font f) string)
     (let ((s (font-variant-scale f)))
       (values (* w s) (* h s)))))
+
+(defun character-width (char)
+  (declare (ignore char))
+  (font-mono-glyph-width *font*))
+
+(defun character-height (char)
+  (declare (ignore char))
+  (font-mono-glyph-height *font*))
