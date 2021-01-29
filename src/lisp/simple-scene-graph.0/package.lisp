@@ -28,4 +28,8 @@
    #:draw-world
    #:force-redraw
    #:world-make-index-for-child
-   #:modifier-state-reset-for-disconnect))
+   #:modifier-state-reset-for-disconnect
+   #:common-node
+   #:node
+   #:update
+   #:node-add-child))
