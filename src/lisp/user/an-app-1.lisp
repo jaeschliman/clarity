@@ -43,25 +43,11 @@
   (if *use-custom-debugger* *custom-debugger-hook* *outer-debugger-hook*))
 
 (defun %draw-and-simulate-app (step-function app exit-tag)
+  ;; simulate first, then draw
   (when (plusp (app-active-display-count app))
-    ;; simulation is for objects that have registered
-    ;; themselves to receive stimulus at regular intervals.
-    ;; this is distinct from event handling and drawing.
-    ;; drawing should be 'mostly' handled by the system, and
-    ;; is critical to to keep it standing up.  event handling
-    ;; requires targeting, dispatching, and so on, and is
-    ;; meant to be more sporadic and reactive.  simulation,
-    ;; as the name implies, is for 'stepping' a system in
-    ;; time.  making it a first class concept distinct from
-    ;; the UI means we can provide controls around it for
-    ;; example, we should be able to list all the running
-    ;; simulations, pause and resume them, move one to a 'bad
-    ;; list' and debug it if it generates exceptions. you get
-    ;; the idea.
     (with-step-app-bindings-and-restarts ()
       (with-simple-restart (skip "Skip this frame")
         (funcall step-function app (cons (get-internal-real-time) :simulate))))
-    ;; simulate first, then draw
     (with-step-app-bindings-and-restarts ()
       (with-simple-restart (skip "Skip this frame")
         (funcall step-function app  (cons (get-internal-real-time) :frame))))))
@@ -73,18 +59,16 @@
       (rev-doseq (item work)
         (with-step-app-bindings-and-restarts ()
           (with-simple-restart (skip "Skip this input ~A" item)
-            ;; here goes nothing!
             (let ((*debugger-hook* (app-debugger-hook))
                   #+nil(*standard-input* (app-input-stream)))
               (funcall step-function app item))))))
     ;; draw/step a frame
     (%draw-and-simulate-app step-function app exit-tag)))
-;;
+
 ;; er, uh actually it is in seconds
 (defvar *app-frame-wait-ms* 0.0125)
 
 (defun do-run-loop-inner (inbox app step-function)
-  ;; TODO: have an 'exit this run loop option'
   (let* ((sentinel (list 'sentinel 'for 'break 'level *break-level*))
          (*sentinel* sentinel))
     (catch sentinel
@@ -93,15 +77,6 @@
            with work = nil
            do
              (with-lock-held ((.lock inbox))
-               ;; :timeout should depend on whether there are
-               ;;  any simulations running.  if there are no
-               ;;  simulations, then drawing should be
-               ;;  per-event, and that's it.  eventually, we can
-               ;;  get fancier and adjust the timeout length
-               ;;  based on the simulation frequency also.
-               ;;  (e.g. very low timeout for scrolling
-               ;;  animation, very long timeout for cursor
-               ;;  blinks)
                (let ((world (app-world app)))
                  (condition-wait
                   (.variable inbox) (.lock inbox)
@@ -120,13 +95,11 @@
          (exit-status (do-run-loop-inner inbox app step-function)))
     (unless (eq exit-status :normal-exit)
       (when (eq *break-level* 0)
-        ;; we are toast!
         (signal 'stop-work))
       (match exit-status
         ;; user quit is when the user gives up (dismisses the debugger)
         (:user-quit ;; should return control to containing run loop
          (format t "user quit this break loop!!~%")
-         ;; I guess??? We got here from an error, right?? (it is like really early still)
          (invoke-restart 'abort))
         ((list* :restart restart args)
          (apply 'invoke-restart restart args))
@@ -147,19 +120,16 @@
 (defun break-loop-debugger (condition fn)
   (declare (ignorable fn))
   (let ((*debugger-hook* *outer-debugger-hook*))
-    ;; TODO: text exceeding break level actually does
     (if (< *break-level* 3)
-        ;; just pile another one up on the stack :o
-        ;; (would prefer to maybe start another thread or something)??
+        ;; just pile another one up on the stack
+        ;; would prefer to start another thread.
         (let ((inbox (app-inbox *app*)))
-          ;; very sophisticated error handling!
           (if (typep condition 'want-input)
               (send-work inbox `(:system . ,(break-loop-make-input-request condition)))
               (send-work inbox `(:system . ,(break-loop-make-error condition))))
           (do-run-loop inbox *app* *step-function*))
         (funcall *outer-debugger-hook* condition fn))))
 
-;; TODO: rename to control thread
 (defun start-work-thread (function app clean-up
                           &key initial-bindings
                             (name "anonymous"))
@@ -175,7 +145,6 @@
                                          (declare (ignore c))
                                          (format t "stopping work.~%")
                                          (setf (.thread box) nil)
-                                         ;; TODO: provide a retry clean up option here
                                          (funcall clean-up app)
                                          (return-from toplevel))))
                (do-run-loop box app function))))))
@@ -220,7 +189,6 @@
 (defun app-display-refresh (app)
   (format t "refreshing display output~%")
   ;; better than this would be posting a refresh event to the inbox
-  ;; will get around to it...
   (setf (.wants-display-refresh app) t))
 
 (defun app-draw-1 (app)
@@ -240,10 +208,6 @@
          (now (get-internal-real-time))
          (elapsed (/ (float (- now timestamp)) internal-time-units-per-second))
          (skippable (> elapsed 0.25)))
-    #+nil
-    (unless skippable
-      (format t ":::::: ~A ~A~%" elapsed input)
-       )
     (cond
       ((eq input :frame) (unless skippable (app-draw-1 app)))
       ((eq input :simulate) (unless skippable (app-sim-1 app)))
@@ -254,8 +218,7 @@
               (let ((display (svref (app-displays app) index)))
                 (unless skippable
                   (handle-display-input app display message))))
-             (:keyboard (progn;//unless skippable
-                          (handle-keyboard-input app message)))
+             (:keyboard (handle-keyboard-input app message))
              (:system (let ((*debugger-hook* *outer-debugger-hook*))
                         (send-event-to-world app message)))
              (otherwise (format t "[APP] unknown sender: ~A, ~A~%" from message))))))))
@@ -279,11 +242,10 @@
             (format t "(setf (.evaluator *editor*) 'desktop:editor-pop-listener)~%"))))
     ;; drawing errors are handled somewhat internally
     ;; by marking the offending node as 'bad' so we don't redraw it,
-    ;;
     (setf (.drawing-error-hook world)
           (lambda (condition node)
             ;; would be nice to make this more obvious on the screen too
-            ;; the orange color isn't that 'error indicationy' really -- in time
+            ;; the orange color isn't that obvious
             (format t "Error while drawing: ~A~%   Bad Node was: ~A~%" condition node)
             ;; TODO: should rename to 'skip-frame'
             (invoke-restart 'skip)))
@@ -298,10 +260,6 @@
     (setf (world-stack-index world-stack) 0
           (world-stack-stack world-stack)
           (list (new-world app 0)))))
-
-;; TODO: model like a flipbook of pages, and you can just jump between them
-;;       copy/pasting, editing and running, and so on :D
-;; (we're getting there!)
 
 (defmethod world-stack-flip-back ((app app))
   (let ((world-stack (app-worlds app)))
@@ -346,7 +304,7 @@
       (start! app))))
 
 (defun %app-update-keyboard-state (app)
-  ;; just share the one keyboard for now
+  ;; share the one keyboard for now
   (when-let* ((kb (app-keyboard app))
               (did (getf (.properties kb) :display-id)))
     (loop for d across (app-displays app) do
@@ -438,10 +396,6 @@
     (node:force-redraw)))
 
 (defmethod send-event-to-world ((app app) raw-event &key device)
-  ;; TODO: model events?
-  ;;  pros: more structure, less 'raw event processing' scattered around app
-  ;;  cons: may choose a bad structure, may be hard to pattern match against
-  ;; UPDATE: this is somewhat mitigated by modeling gestures internally.
   (let ((*current-input-device* device)) ;; we can probably just pass the device to w-d-e below...
     (node:with-active-world ((app-world app))
       (node:world-dispatch-event node:*world* raw-event))))
@@ -452,8 +406,6 @@
                          :device (app-keyboard app))))
 
 (defmethod handle-keyboard-input ((app app) event)
-  ;; ok here's the tricky bit -- we read the modifier state internally :o
-  ;; so we shouldn't upd here... fixmeeeee
   (let* ((kb (app-keyboard app))
          (mod (.modifier-state kb)))
     (match event
@@ -470,10 +422,6 @@
       ((list :keyup key)
        (modifier-state-update-for-key mod key nil)
        (send-event-to-world app event :device (app-keyboard app))))))
-
-;; I guess it's a little strange for a display to 'have input' hehehe
-;; also it _would_ be nice if we could have the display as a parameter --
-;; what if we want multiple displays?
 
 (defgeneric handle-display-input (app display raw-event))
 (defmethod handle-display-input ((app app) display raw-event)
