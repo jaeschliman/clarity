@@ -7,4 +7,6 @@
         :coffee.umbrella.dot-access.symbols)
   (:local-nicknames
    (:mbox :coffee.umbrella.mailbox)
-   (:datastream :coffee.umbrella.clarity.datastream)))
+   (:datastream :coffee.umbrella.clarity.datastream))
+  (:export
+   #:ensure-global-device-server))

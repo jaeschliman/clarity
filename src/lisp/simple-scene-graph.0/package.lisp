@@ -12,4 +12,7 @@
    (:vector :coffee.umbrella.vector)
    (:display :coffee.umbrella.clarity.display)
    (:draw :coffee.umbrella.clarity.draw)
-   ))
+   )
+  (:export
+   #:*current-display-device*
+   #:*display*))
