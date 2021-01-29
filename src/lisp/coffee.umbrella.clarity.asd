@@ -51,6 +51,10 @@
      (:file "device-host-0")
      (:file "device-host-1")
      (:file "device-server")))
+   (:module "editors"
+    :serial t
+    :components
+    (:file "text"))
    (:module "user"
     :serial t
     :components
