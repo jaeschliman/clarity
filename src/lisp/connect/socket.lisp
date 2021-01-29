@@ -140,7 +140,7 @@
 
 (defmethod stop ((self root-datastream-proxy))
   (format t "stopping root datastream proxy.~%")
-  (datastream-signal-termination (root-datastream-proxy-datastream self)))
+  (datastream:signal-termination (root-datastream-proxy-datastream self)))
 
 (defmethod accept-client ((server server) client-socket)
   ;; make a connection, start its listen loop, add to server
@@ -190,25 +190,37 @@
       (unless ok
         (stop self)))))
 
+(defmethod stop ((self server))
+  (setf (server-state self) :shutting-down)
+  (map nil 'stop (server-connections self))
+  (setf (server-connections self) nil)
+  (when-let (socket (server-socket self))
+    (usocket:socket-close socket)
+    (setf (server-socket self) nil))
+  (when-let (thread (server-accept-thread self))
+    (unless (eq thread (current-thread))
+      (destroy-thread thread)
+      (setf (server-accept-thread self) nil)))
+  (setf (server-state self) :initial))
 
-(defmethod send (object (proxy root-datastream-proxy))
-  (send (make-envelope :tag (root-datastream-proxy-identifier proxy)
-                       :content object)
-        (root-datastream-proxy-connection proxy)))
+(defmethod datastream:send (object (proxy root-datastream-proxy))
+  (datastream:send (make-envelope :tag (root-datastream-proxy-identifier proxy)
+                                  :content object)
+                   (root-datastream-proxy-connection proxy)))
 
-(defmethod receive ((env envelope) (proxy root-datastream-proxy))
-  (receive (envelope-content env) (root-datastream-proxy-datastream proxy)))
+(defmethod datastream:receive ((env envelope) (proxy root-datastream-proxy))
+  (datastream:receive (envelope-content env) (root-datastream-proxy-datastream proxy)))
 
 (defmethod request-datastream ((conn connection))
   (let* ((tag (connection-next-datastream-tag conn))
-         (datastream (make-datastream))
+         (datastream (datastream:make))
          (proxy (make-instance 'root-datastream-proxy :datastream datastream
                                                       :identifier tag
                                                       :connection conn)))
     (format t "creating datastream with tag ~A for connection with id ~A~%"
             tag (connection-id conn))
     (incf (connection-next-datastream-tag conn))
-    (setf (datastream-parent-stream datastream) proxy)
+    (setf (.parent-stream datastream) proxy)
     (push (cons tag proxy) (connection-datastreams conn))
     (values datastream tag)))
 

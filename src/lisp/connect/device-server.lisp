@@ -132,7 +132,7 @@
 (defmethod server-add-connection :after ((server device-server) (conn connection))
   ;; query the connection for capabilities
   (let ((ds (request-datastream conn))) ;; this better have tag 0!
-    (send :list-devices ds)
+    (datastream:send :list-devices ds)
     (add-listener (lambda (output state data event)
                     (declare (ignore output state data))
                     (match event

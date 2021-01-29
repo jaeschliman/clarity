@@ -9,7 +9,8 @@
              #:for-each
              #:receive
              #:signal-termination
-             #:stop-listening))
+             #:stop-listening
+             #:make))
 (in-package :coffee.umbrella.clarity.datastream)
 
 (define-model datastream ()
