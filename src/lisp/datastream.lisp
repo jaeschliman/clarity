@@ -21,7 +21,7 @@
      (output-filter #'list :type function)
      (listeners nil :type list)))
 
-(defun make (&key parent-stream child-streams input-filter output-filter listeners)
+(defun make (&key parent-stream child-streams (input-filter #'list) (output-filter #'list) listeners)
   (make-instance 'datastream
                  :parent-stream parent-stream
                  :child-streams child-streams

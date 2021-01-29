@@ -53,8 +53,8 @@
 (defmethod ensure-device-initialized ((device device))
   (when (eq :initial (device-state device))
     (setf (device-state device) :opening)
-    (send `(:open-device ,(device-id device)) (device-datastream device))
-    (add-listener (lambda (stream stream-state context event)
+    (datastream:send `(:open-device ,(device-id device)) (device-datastream device))
+    (datastream:add-listener (lambda (stream stream-state context event)
                     (declare (ignore stream context event))
                     (when (eq stream-state :closed)
                       (device-inform-disconnection device)))
@@ -89,7 +89,7 @@
       (progn
         (ensure-device-initialized device)
         (format t "found requestor for device: ~A~%" device)
-        (add-listener (lambda (output state data event)
+        (datastream:add-listener (lambda (output state data event)
                         (declare (ignore output data state))
                         (match event
                           (:device-ready
@@ -97,12 +97,12 @@
                            (loop do
                              (device-ready
                               requestor (device-type device) (device-datastream device) device)
-                             (when (device-inuse? device) (stop-listening))
+                             (when (device-inuse? device) (datastream:stop-listening))
                              (format t "requestor did not use device, looking for another~%")
                              (setf requestor (device-server-dequeue-requestor server device))
                              (unless requestor
                                (format t "ran out of requestors for device.~%")
-                               (stop-listening))))
+                               (datastream:stop-listening))))
                           (x (format t "unexpected device reply: ~S~%" x))))
                       nil (device-datastream device)))
       (format t "unable to find requestor for device: ~A~%" device))))
@@ -110,7 +110,6 @@
 (defmethod device-server-add-device ((server device-server) (device device))
   (format t "new device available. ~A~%" device)
   (push device (device-registry-available-devices (device-server-device-registry server)))
-  (send-notification server :device-added device)
   (device-server-try-assign-device server device))
 
 (defmethod device-server-remove-all-devices-for-connection ((server device-server) (conn connection))
@@ -133,7 +132,7 @@
   ;; query the connection for capabilities
   (let ((ds (request-datastream conn))) ;; this better have tag 0!
     (datastream:send :list-devices ds)
-    (add-listener (lambda (output state data event)
+    (datastream:add-listener (lambda (output state data event)
                     (declare (ignore output state data))
                     (match event
                       ((list :devices device-list)

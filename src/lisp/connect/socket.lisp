@@ -56,7 +56,7 @@
     (loop
        with stream = (connection-stream self)
        while (eq :open (connection-state self))
-       do (receive (buffer-read stream) self))))
+       do (datastream:receive (buffer-read stream) self))))
 
 (defmethod start ((self connection))
   (assert (eq :ready (connection-state self)))
@@ -71,6 +71,7 @@
                    (ended-well nil))
                (handler-bind ((error (lambda (e)
                                        (format t "unexpected error in socket loop (case -2): ~A, aborting~%" e)
+                                       (break)
                                        (abort))))
                  (unwind-protect
                       (progn
@@ -224,16 +225,16 @@
     (push (cons tag proxy) (connection-datastreams conn))
     (values datastream tag)))
 
-(defmethod send (object (conn connection))
+(defmethod datastream:send (object (conn connection))
   (mbox:send (.mbox conn) object))
 
-(defmethod receive (object (con connection))
+(defmethod datastream:receive (object (con connection))
   (typecase object
     (envelope
      (let* ((tag (envelope-tag object))
             (target? (find tag (connection-datastreams con) :key 'car)))
        (if-let (datastream (cdr target?))
-         (recieve object datastream)
+         (datastream:receive object datastream)
          (format t "wrongly addressed envelope: ~S~%" object))))
     (t
      (format t "unaddressed message: ~S~%" object))))
