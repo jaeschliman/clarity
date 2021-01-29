@@ -71,7 +71,7 @@
                    (ended-well nil))
                (handler-bind ((error (lambda (e)
                                        (format t "unexpected error in socket loop (case -2): ~A, aborting~%" e)
-                                       (break)
+                                       ;; (break)
                                        (abort))))
                  (unwind-protect
                       (progn
