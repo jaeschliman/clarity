@@ -49,4 +49,9 @@
      (:file "socket")
      (:file "device-host-0")
      (:file "device-host-1")
-     (:file "device-server")))))
+     (:file "device-server")))
+   (:module "user"
+    :serial t
+    :components
+    ((:file "an-app-0")
+     (:file "an-app-1")))))
