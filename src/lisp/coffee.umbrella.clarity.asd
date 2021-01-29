@@ -22,6 +22,7 @@
    (:file "utils-1")
    (:file "vector")
    (:file "string")
+   (:file "list")
    (:file "model-0")
    (:file "model-1")
    (:file "datastream")
