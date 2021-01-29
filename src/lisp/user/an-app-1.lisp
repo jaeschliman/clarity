@@ -23,13 +23,13 @@
 
 
 (defun make-user-display-for-stream (stream id)
-  (make-instance 'node::device.display
+  (make-instance 'node:device.display
                  :id id
                  :stream stream
                  :bounds nil))
 
 (defun make-user-keyboard-for-stream (stream id)
-  (make-instance 'node::device.keyboard
+  (make-instance 'node:device.keyboard
                  :id id
                  :stream stream))
 
@@ -105,7 +105,7 @@
                (let ((world (app-world app)))
                  (condition-wait
                   (.variable inbox) (.lock inbox)
-                  :timeout (when (plusp (node::world-active-simulation-count world))
+                  :timeout (when (plusp (node:world-active-simulation-count world))
                              *app-frame-wait-ms*)))
                (setf work (.queue inbox)
                      (.queue inbox) nil))
@@ -224,16 +224,15 @@
   (setf (.wants-display-refresh app) t))
 
 (defun app-draw-1 (app)
-  (node::with-active-world ((app-world app))
-    (progn;;with-coalesced-view-updates ()
-      (if (.wants-display-refresh app)
-          (app-force-redraw app)
-          (app-draw-world app))))
+  (node:with-active-world ((app-world app))
+    (if (.wants-display-refresh app)
+        (app-force-redraw app)
+        (app-draw-world app)))
   (setf (.wants-display-refresh app) nil))
 
 (defun app-sim-1 (app)
-  (node::with-active-world ((app-world app))
-    (node::world-simulate)))
+  (node:with-active-world ((app-world app))
+    (node:world-simulate)))
 
 (defun app-handle-input (app event)
   (let* ((timestamp (car event))
@@ -266,7 +265,7 @@
   (stop! app))
 
 (defmethod new-world ((app app) index)
-  (let* ((world (node::make-world))
+  (let* ((world (node:make-world))
          (package (make-user-package app index))
          (text
           (with-output-to-string (*standard-output*)
@@ -290,7 +289,7 @@
             (invoke-restart 'skip)))
     world
     #+nil
-    (node::with-active-world (world)
+    (node:with-active-world (world)
       (prog1 world
         (desktop:textedit :text text :initial-row 2 :package package)))))
 
@@ -338,7 +337,7 @@
             (loop for id below supported-display-count collect
                  `((:display ,id) :display.instructions.v0))))
 
-          (setf (app-host app) (conn::create-simple-device-host
+          (setf (app-host app) (conn:create-simple-device-host
                                 :attach-to app
                                 :port-descriptions `(,@display-ports
                                                      (:keyboard :physical-keyboard.v0))
@@ -361,7 +360,7 @@
   (match port
     ((list :display index)
      (let ((device (make-user-display-for-stream
-                    (disp::make-rendercode-display :output stream)
+                    (disp:make-rendercode-display :output stream)
                     index)))
        (setf (svref (app-displays app) index) device)
        (dstm:for-each stream app (make-port-handler port device))
@@ -380,7 +379,7 @@
        (setf (.state display) :disconnected
              (svref (app-displays app) index) nil)))
     (:keyboard
-     (node::modifier-state-reset-for-disconnect (.modifier-state (app-keyboard app)))
+     (node:modifier-state-reset-for-disconnect (.modifier-state (app-keyboard app)))
      (setf (app-keyboard app) nil))))
 
 (defmethod start! ((app app))
@@ -388,9 +387,9 @@
   (let ((server (app-device-server app))
         (host (app-host app)))
     (format t "[APP] attaching host~%")
-    (conn::attach-host host server)
+    (conn:attach-host host server)
     (format t "[APP] requesting autoconnect~%")
-    (conn::request-autoconnect host server)
+    (conn:request-autoconnect host server)
     (format t "[APP] starting work thread~%")
     (app-start-work app)
     t))
@@ -400,7 +399,7 @@
   (let ((server (app-device-server app))
         (host (app-host app)))
     (format t "[APP] detaching host~%")
-    (conn::detach-host host server)
+    (conn:detach-host host server)
     (setf (app-package-list app) nil) t))
 
 (defun quit-app! ()
@@ -427,16 +426,16 @@
   (incf (.total-times-flushed (.stats app)) count))
 
 (defun app-draw-world (app)
-  (node::world-start-frame)
+  (node:world-start-frame)
   (let ((draw-count
          (app-do-active-displays app (display)
-           (node::draw-world))))
+           (node:draw-world))))
     (app-note-draw-count app draw-count))
-  (node::world-end-frame))
+  (node:world-end-frame))
 
 (defun app-force-redraw (app)
   (app-do-active-displays app (display)
-    (node::force-redraw)))
+    (node:force-redraw)))
 
 (defmethod send-event-to-world ((app app) raw-event &key device)
   ;; TODO: model events?
@@ -444,9 +443,8 @@
   ;;  cons: may choose a bad structure, may be hard to pattern match against
   ;; UPDATE: this is somewhat mitigated by modeling gestures internally.
   (let ((*current-input-device* device)) ;; we can probably just pass the device to w-d-e below...
-    (node::with-active-world ((app-world app))
-      (progn;with-coalesced-view-updates ()
-        (node::world-dispatch-event node::*world* raw-event)))))
+    (node:with-active-world ((app-world app))
+      (node:world-dispatch-event node:*world* raw-event))))
 
 (defmethod maybe-send-keypress-to-world ((app app) keyname)
   (unless (member keyname '(:shift :control :command :option :function))
