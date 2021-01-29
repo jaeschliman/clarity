@@ -2,7 +2,11 @@
             (:export
              #:longest-line-length
              #:line-count
-             #:char-dimensions))
+             #:char-dimensions
+             #:insert-at
+             #:ensure-length
+             #:line-insert-at
+             #:line-delete-at))
 (in-package :coffee.umbrella.string)
 
 (defun longest-line-length (string)
@@ -21,3 +25,22 @@
 (defun char-dimensions (string)
   (values (longest-line-length string)
           (line-count string)))
+
+(defun insert-at (string insertion-string n)
+  (concatenate 'string (subseq string 0 n) insertion-string (subseq string n)))
+
+(defun ensure-length (string length character)
+  (if (>= (length string) length) string
+      (let* ((diff (- length (length string)))
+             (add (make-string diff :initial-element character)))
+        (concatenate 'string string add))))
+
+(defun line-insert-at (string insertion-string n)
+  (insert-at (ensure-length string n #\Space) insertion-string n))
+
+(defun line-delete-at (string count n)
+  (let* ((left (subseq string 0 (min n (length string))))
+         (rstart (+ n count)))
+    (if (<= rstart (length string))
+        (concatenate 'string left (subseq string rstart))
+        left)))
