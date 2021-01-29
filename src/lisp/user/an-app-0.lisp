@@ -22,7 +22,7 @@
 
 (define-model app ()
   ((stats (make-instance 'app-stats))
-   (device-server (conn::ensure-global-device-server :ip "0.0.0.0" :port 1111))
+   (device-server (conn:ensure-global-device-server :ip "0.0.0.0" :port 1111))
    (host nil)
    (displays (vector nil nil nil nil nil nil nil nil nil nil))
    (keyboard nil)
@@ -45,11 +45,11 @@
   (once-only (app)
     `(let* ((flush-count 0)
             (doit (lambda (,var)
-                    (let ((node::*current-display-device* ,var)
-                          (node::*display* (.stream ,var)))
+                    (let ((node:*current-display-device* ,var)
+                          (node:*display* (.stream ,var)))
                       (node::with-active-world ((app-world ,app))
                         (progn ,@body))
-                      (when (disp::flush (.stream ,var))
+                      (when (disp:flush (.stream ,var))
                         (incf flush-count))))))
        (loop for display across (app-displays ,app) do
             (when display (funcall doit display)))
