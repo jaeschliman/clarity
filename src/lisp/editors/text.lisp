@@ -37,7 +37,7 @@
 
    ;; model of the text we are editing
    text
-
+   transient-output nil
    (poplist nil)
    (evaluator 'lisp-compile-free-string)))
 
@@ -125,3 +125,135 @@
                 (draw:textat 0.0 y item))
             (incf y h)
             (incf idx)))))))
+
+;; very very bare bones stuff here..
+(defun whitespace? (ch) (or (char-equal ch #\Space)
+                            (char-equal ch #\Newline)))
+
+(defun token-break? (ch)
+  (or (whitespace? ch)
+      (member ch '(#\[ #\] #\( #\) #\; #\' #\"))))
+
+(defun string-lisp-token-under-col (string col)
+  (when (< col (length string))
+    ;; don't understand block comments yet, sorry!
+    (unless (token-break? (aref string col))
+      (let ((comment-start (position #\; string :from-end t :end col)))
+        (unless comment-start
+          (let ((start (1+ (or (position-if 'token-break? string :from-end t :end col) -1)))
+                (end  (or (position-if 'token-break? string :start col)
+                          (length string))))
+            (values (subseq string start end) start end)))))))
+
+(defmethod line-token-under-xy ((line-buffer line-buffer) col row)
+  (let ((lines (line-buffer-lines line-buffer)))
+    (when (<= row (length lines))
+      (let* ((line (elt lines row)))
+        (string-lisp-token-under-col line col)))))
+
+(defmethod line-token-before-xy ((line-buffer line-buffer) col row)
+  (unless (zerop col)
+    (line-token-under-xy line-buffer (1- col) row)))
+
+(defun get-swank-completions-for-token (token package-name)
+  (swank:simple-completions token package-name)
+  #+nil
+  (swank:completions token package-name))
+
+(defmethod editor-showing-completions? ((editor editor))
+  (when-let (p (.poplist editor))
+    (and (.visible p) p)))
+
+(defmethod editor-refresh-completions ((editor editor))
+  (when-let (poplist (editor-showing-completions? editor))
+    (let ((col (.cursor-x editor))
+          (row (.cursor-y editor)))
+      (if-let (token (line-token-before-xy (.text editor) col row))
+        (if-let (completions (get-swank-completions-for-token token (package-name (.package editor))))
+          (let* ((prev-index (.selection-index poplist))
+                 (prev-item  (ignore-errors  (elt (.contents poplist) prev-index))) ;; ignore-erros gross
+                 (new-idx
+                  (if (= 1 (length token))
+                      ;; prefer the suggested completion. it doesn't appear to be that helpful though (yet?)
+                      ;; perhaps I need to learn how to use swank fuzzy matching!
+                      (or (position (second completions) (first completions) :test 'string-equal) 0)
+                      (or (and prev-item (position prev-item (first completions) :test 'string-equal)) 0))))
+            (if (and (= 1 (length (first completions)))
+                     (string-equal (car (first completions)) token))
+                (setf (.visible poplist) nil
+                      (.transient-output editor)
+                      (list (format nil ";; ~S is complete.~%" token)))
+                (setf (.transient-output editor)
+                      (list (format nil ";; ~A completions for ~S ~%" (length (first completions)) token))
+                      (.contents poplist) (first completions)
+                      (.col poplist) col
+                      (.row poplist) row
+                      (.prefix poplist) token
+                      (.selection-index poplist) new-idx
+                      (.visible poplist) t)))
+          (setf (.visible poplist) nil
+                (.transient-output editor)
+                (list (format nil ";; No completions for: ~S~%" token))))
+        (setf (.visible poplist) nil
+              (.transient-output editor)
+              (list (format nil ";; No completion token at point.~%")))))))
+
+(defmethod editor-ensure-hide-completions ((editor editor))
+  (when-let (p (editor-showing-completions? editor))
+    (setf (.visible p) nil (.selection-index p) 0)))
+
+(defmethod editor-ensure-show-completions ((editor editor))
+  (let ((p (ensure-poplist editor)))
+    (unless (editor-showing-completions? editor)
+      (setf (.visible p) t)
+      (editor-refresh-completions editor))))
+
+(defvar *editor-auto-auto-complete* t)
+
+(defmethod editor-try-activate-completion ((editor editor))
+  (when *editor-auto-auto-complete*
+    (editor-ensure-show-completions editor)))
+
+;; toggle completions
+(defmethod editor-toggle-completions ((editor editor))
+  (setf *editor-auto-auto-complete* (not *editor-auto-auto-complete*))
+  (if-let (p (editor-showing-completions? editor))
+    (editor-ensure-hide-completions editor)
+    (editor-ensure-show-completions editor))
+    (setf (.transient-output editor)
+          (list (format nil ";; Autocomplete ~A~%" (if *editor-auto-auto-complete* "active" "inactive")))))
+
+(defmethod editor-next-completion ((editor editor))
+  (when-let (p (editor-showing-completions? editor))
+    (setf (.selection-index p) (min (1- (length (.contents p)))
+                                    (1+ (.selection-index p))))))
+
+(defmethod editor-prev-completion ((editor editor))
+  (when-let (p (editor-showing-completions? editor))
+    (setf (.selection-index p) (max 0 (1- (.selection-index p))))))
+
+
+(defmethod editor-completions-append-character ((editor editor) char)
+  (when-let (p (editor-showing-completions? editor))
+    (let* ((selection (ignore-errors (elt (.contents p) (.selection-index p))))
+           (pfx (concatenate 'string (.prefix p) (list char)))
+           (contents (remove-if-not (lambda (match) (starts-with-subseq pfx match))
+                                    (.contents p)))
+           (new-idx (or (and selection (position selection contents :test 'string-equal)) 0)))
+      (if contents
+          (setf (.prefix p) pfx (.contents p) contents (.col p) (1+ (.col p)) (.selection-index p) new-idx)
+          (editor-ensure-hide-completions editor)))))
+
+(defmethod editor-completions-delete-character ((editor editor))
+  (when-let (p (editor-showing-completions? editor))
+    (editor-refresh-completions editor)))
+
+(defmethod editor-completions-accept-current ((editor editor))
+  (when-let (p (editor-showing-completions? editor))
+    (let* ((text (poplist-insertion-text p))
+           (pfx (.prefix p))
+           (plen (length pfx)))
+      (delete-text (.text editor) plen (- (.cursor-x editor) plen) (.cursor-y editor))
+      (decf (.cursor-x editor) plen)
+      (editor-ensure-hide-completions editor)
+      (editor-insert editor text))))
