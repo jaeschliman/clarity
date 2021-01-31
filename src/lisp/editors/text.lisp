@@ -46,7 +46,7 @@
 
    ;; model of the text we are editing
    text
-   transient-output nil
+   (transient-output nil)
    (poplist nil)
    (evaluator 'lisp-compile-free-string)))
 
