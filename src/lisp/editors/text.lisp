@@ -35,17 +35,74 @@
    ;; the package to evaluate in
    package
 
+   ;; "stickers"
+   ;; in an early implementation, the text editor supported
+   ;; annotating text with 'stickers' of variable height that were collapsible
+   ;; and so on. this was used to display compiler notes and warnings.
+   ;; will probably bring them into this implementation at some point,
+   ;; but for now the focus is on porting the basic text editor _somewhat_ cleanly,
+   ;; and then porting over the WIP structure editor.
+   (stickers nil)
+
    ;; model of the text we are editing
    text
    transient-output nil
    (poplist nil)
    (evaluator 'lisp-compile-free-string)))
 
+
 (define-model line ()
   (string))
 
 (define-model line-buffer ()
   (lines))
+
+(defun make-editor (&key on-string
+                      (initial-row 0)
+                      (initial-col 0)
+                      package
+                      evaluator)
+  (let* ((node (make-instance 'editor-node))
+         (buffer (line-buffer-from-string (or on-string "")))
+         (editor (make-instance 'editor
+                                :cursor-x initial-col :cursor-y initial-row
+                                :cursor-style :block
+                                :cursor-color '(0.0 1.0 1.0 0.3)
+                                :cursor-blink nil
+                                :text buffer
+                                :transient-output nil
+                                :node node
+                                :package package)))
+    (when evaluator (setf (.evaluator editor) evaluator))
+    (have editor node:update node)
+    (have buffer node:update node)
+    editor))
+
+(defmethod node:update ((e editor) (n editor-node) slot old-value new-value)
+  (declare (ignore slot old-value new-value))
+  (setf (node-wants-redraw n) t))
+
+(defmethod node:update ((e line-buffer) (n editor-node) slot old-value new-value)
+  (declare (ignore slot old-value new-value))
+  (setf (node-wants-redraw n) t))
+
+;; ---------------------------------------------------------------
+;; stub sticker implementation
+;;
+;; placeholder functions until sticker code is ported over
+
+(defmethod stickers-for-row ((editor editor) (stickers null) row)
+  (declare (ignore row)) nil)
+(defmethod stickers-at-point ((editor editor) (stickers null) col row)
+  (declare (ignore col row)) nil)
+(defun stickers-combined-row-height (stickers)
+  (declare (ignore stickers))
+  0.0)
+
+;; ---------------------------------------------------------------
+;; autocomplete implementation
+;;
+;; 'poplist' being a list of completions that 'pop' up
 
 (define-model poplist ()
   ((prefix "") (contents nil) (selection-index 0)  (row 0) (col 0) (visible nil)))
