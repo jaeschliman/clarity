@@ -42,4 +42,8 @@
    #:gesture.mouse-hover
    #:node-transform-from-world-space
    #:node-layout-in-bounds
-   #:node-natural-size-in-layout))
+   #:node-natural-size-in-layout
+   #:handle-event
+   #:wants-gesture
+   #:handle-gesture
+   #:make-world))
