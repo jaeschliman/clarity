@@ -54,7 +54,7 @@
    (:module "editors"
     :serial t
     :components
-    (:file "text"))
+    ((:file "text")))
    (:module "user"
     :serial t
     :components
