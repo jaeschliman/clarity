@@ -400,6 +400,163 @@
          until (> bottom-edge y)
          finally (return curr-row))))))
 
+(defmethod editor-insert ((editor editor) (text string))
+  (insert-text (.text editor) text
+               (.cursor-x editor)
+               (.cursor-y editor))
+  ;; there should be a method that accepts a string, rather than char
+  (map nil (lambda (ch) (editor-completions-append-character editor ch)) text)
+  (prog1 (incf (.cursor-x editor) (length text))
+    (editor-try-activate-completion editor)))
+
+(defun move-cursor (editor dir)
+  (case dir
+    (:left  (decf (.cursor-x editor)))
+    (:right (incf (.cursor-x editor)))
+    (:up    (decf (.cursor-y editor)))
+    (:down  (incf (.cursor-y editor)))))
+
+(defmethod editor-row-col-for-charactor-position ((editor editor) (position fixnum))
+  (let ((buffer (.text editor)))
+    (check-type buffer line-buffer)
+    (let ((lines (.lines buffer)))
+      (loop
+         with col = position
+         for row upfrom 0
+         for line in lines
+         ;; 1+ for the invisible newline
+         for len = (1+ (length line)) do
+           (if (< col len) (return (list row col))
+               (decf col len))))))
+
+;; ---------------------------------------------------------------
+;;
+;; gesture/event handling
+
+(defvar *editor-click-token-hook*)
+
+(defun handle-string-key (editor key flags)
+  (cond ((member :control flags)
+         (match key
+           ("n" (move-cursor editor :down))
+           ("p" (move-cursor editor :up))
+           ("b" (move-cursor editor :left))
+           ("f" (move-cursor editor :right))
+           ("a" (setf (.cursor-x editor) 0))
+           ("e" (setf (.cursor-x editor)
+                      (line-length (.text editor) (.cursor-y editor))))))
+        ((member :option flags)
+         (match key
+           ("/" (editor-toggle-completions editor))
+           ("n" (editor-next-completion editor))
+           ("p" (editor-prev-completion editor))))
+        (t (editor-insert editor key))))
+
+(defmethod handle-keydown ((editor editor) event)
+  (let ((key (.keyname event))
+        (flags (.flags event)))
+    (if (stringp key) ;; should also confirm the text is not like a control character or smth
+        (handle-string-key editor key flags)
+        (if (member :command flags)
+            ;; holding off on porting the evaluation code for the moment, it is rather messy
+            nil #+nil
+            (case key
+              (:return
+               (if (member :shift flags)
+                   (editor-evaluate-buffer-contents editor (editor-string-contents editor) 0)
+                   (multiple-value-bind (pos str) (find-toplevel-form editor)
+                     (editor-evaluate-buffer-contents editor str pos)))))
+            (let ((should-dismiss-completions t))
+              (case key
+                ((:left :right :up :down) (move-cursor editor key))
+                #+nil
+                (:tab
+                 (if (editor-showing-completions? editor)
+                     (editor-completions-accept-current editor)
+                     (doseq (sticker (stickers-at-point editor (editor-stickers editor)
+                                                        (editor-cursor-x editor)
+                                                        (editor-cursor-y editor)))
+                       (setf (sticker-visible sticker)
+                             (not (sticker-visible sticker))))))
+                (:return
+                 (split-line (.text editor)
+                             (.cursor-x editor)
+                             (.cursor-y editor))
+                 (setf (.cursor-x editor) 0)
+                 (incf (.cursor-y editor)))
+                (:delete
+                 (let* ((col (.cursor-x editor))
+                        (row (.cursor-y editor)))
+                   (cond
+                     ;; do nothing at position zero
+                     ((and (zerop row) (zerop col)))
+                     ;; backward join line when flush left
+                     ((zerop col)
+                      (let* ((text (.text editor))
+                             (prevlen (line-length text (1- row))))
+                        (join-line text (1- row))
+                        (decf (.cursor-y editor))
+                        (setf (.cursor-x editor) prevlen)))
+                     ;; otherwise delete backwards 1 char
+                     ((plusp col)
+                      (delete-text (.text editor) 1 (1- col) row)
+                      (decf (.cursor-x editor))
+                      (editor-completions-delete-character editor)
+                      (setf should-dismiss-completions nil)))))
+                (t (setf should-dismiss-completions nil)))
+              (when should-dismiss-completions
+                (editor-ensure-hide-completions editor)))))))
+
+(defmethod node:handle-event ((enode editor-node) event)
+  (when (and (typep event 'node:key-event)
+             (eq :keydown (.type event)))
+    (handle-keydown (.editor enode) event)))
+
+(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.click))
+  t)
+
+(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.click))
+  (node:focus! n)
+  (when-let (hook *editor-click-token-hook*)
+    (when-let (token (line-token-under-xy (.text (.editor n))
+                                          (floor (.mouse-cursor-x (.editor n)))
+                                          (floor (.mouse-cursor-y (.editor n)))))
+      (let ((*package* (.package (.editor n))))
+        (funcall hook (.x g) (.y g) token)))))
+
+(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.scroll))
+  t)
+
+(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.scroll))
+  (incf (.scroll-offset n) (.y g)))
+
+(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.mouse-hover))
+  t)
+
+(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.mouse-hover))
+  (let ((e (.editor n)))
+    (if (eq :end (.phase g))
+        (setf (.mouse-cursor-active e) nil)
+        (multiple-value-bind (x y) (node:node-transform-from-world-space n (.x g) (.y g))
+          (multiple-value-bind  (col row) (editor-col-row-for-x-y e x (- y (.scroll-offset n)))
+            (setf (.mouse-cursor-active e) t
+                  (.mouse-cursor-x e) col
+                  (.mouse-cursor-y e) row))))))
+
+;; ---------------------------------------------------------------
+;;
+;; layout
+
+(defmethod node:node-layout-in-bounds ((n editor-node) x y w h)
+  (setf (.x n) x (.y n) y (.width n) w (.height n) h))
+
+(defmethod node:node-natural-size-in-layout ((n editor-node) layout w h)
+  (values (.width n) (.height n) :expand :expand))
+
+;; ---------------------------------------------------------------
+;;
+;; display
+
 (defun draw-cursor (editor)
   (let* ((x (editor-cursor-x editor))
          (y (editor-cursor-y editor))
