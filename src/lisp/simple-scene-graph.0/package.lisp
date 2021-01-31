@@ -32,4 +32,14 @@
    #:common-node
    #:node
    #:update
-   #:node-add-child))
+   #:node-add-child
+   #:draw-background
+   #:node-layout-size
+   #:key-event
+   #:gesture.click
+   #:focus!
+   #:gesture.scroll
+   #:gesture.mouse-hover
+   #:node-transform-from-world-space
+   #:node-layout-in-bounds
+   #:node-natural-size-in-layout))
