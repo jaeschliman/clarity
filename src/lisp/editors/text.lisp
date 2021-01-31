@@ -136,7 +136,7 @@
         (setf (.pos n) (cons (xof n) (- y offs)))))
     (when (eq slot 'col)
       (let ((x (* chw new-value)))
-        (setf (.pos n) (cons x (yof n)))))))
+        (setf (.pos n) (cons x (yof n))))))
   ;; catchall
   (setf (.wants-redraw n) t))
 
