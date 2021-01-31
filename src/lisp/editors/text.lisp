@@ -367,3 +367,114 @@
 
 (defmethod editor-string-contents ((editor editor))
   (line-buffer-string-contents (editor-text editor)))
+
+(defmethod editor-y-position-for-row ((editor editor) row)
+  (let ((sticker-index (editor-stickers editor))
+        (step (font:character-height #\Space)))
+    (float
+     (loop
+        for curr-row below row
+        for stickers = (stickers-for-row editor sticker-index curr-row)
+        for sticker-line-height = (stickers-combined-row-height stickers)
+        sum (+ step sticker-line-height)))))
+
+(defmethod editor-character-position-for-col-row ((editor editor) col row)
+  (let ((line-buffer (.text editor)))
+    (+ (min col (1- (length (elt (.lines line-buffer) row))))
+       (loop for curr-row below row
+          for line in (.lines line-buffer)
+          sum (1+ (length line))))))
+
+(defmethod editor-col-row-for-x-y ((editor editor) x y)
+  (let ((sticker-index (editor-stickers editor))
+        (chw  (font:character-width #\Space))
+        (step (font:character-height #\Space)))
+    (values
+     (float (floor x chw))
+     (float
+      (loop
+         for curr-row upfrom 0
+         for stickers = (stickers-for-row editor sticker-index curr-row)
+         for sticker-line-height = (stickers-combined-row-height stickers)
+         sum (+ step sticker-line-height) into bottom-edge
+         until (> bottom-edge y)
+         finally (return curr-row))))))
+
+(defun draw-cursor (editor)
+  (let* ((x (editor-cursor-x editor))
+         (y (editor-cursor-y editor))
+         (w (font:character-width #\Space))
+         (h (font:character-height #\Space))
+         (xl (* x w))
+         (yt (editor-y-position-for-row editor y))
+         (yb (+ yt h)))
+    (draw:with-graphics-group ()
+      (apply 'draw:rgba-fill (editor-cursor-color editor))
+      (case (editor-cursor-style editor)
+        (:block     (draw:box xl yt w h))
+        (:bar       (draw:box (- xl 2.0) yt 2.0 h))
+        (:underline (draw:box xl (- yb 5.0) w 5.0))))))
+
+(defun draw-token-highlight (token start end)
+  (declare (ignore token))
+  (draw:with-graphics-group ()
+    (draw:rgba-fill 0.6 1.0 0.7 1.0)
+    (let ((w (font:character-width #\Space))
+          (h (font:character-height #\Space)))
+      (draw:box (* w start) 0.0 (* w (- end start)) h))))
+
+(defmethod draw-line-buffer-line ((line string))
+  (draw:textat 0.0 0.0 line)
+  (draw:translate 0.0 (font:character-height #\Space)))
+
+(defmethod editor-draw-lines ((editor editor) scroll-x-offset scroll-y-offset width height)
+  (let ((buffer (editor-text editor))
+        (sticker-index (editor-stickers editor))
+        (mouse-active (.mouse-cursor-active editor))
+        (mx (round (.mouse-cursor-x editor)))
+        (my (round (.mouse-cursor-y editor))))
+    (draw:with-clip-shape ()
+      (draw:box 0.0 0.0 width height)
+      (loop
+        with endline = scroll-y-offset
+        with startline = 0.0
+        with drawing = nil
+        with line-height = (font:character-height #\Space)
+        for line in (line-buffer-lines buffer)
+        for row upfrom 0
+        for stickers = (stickers-for-row editor sticker-index row)
+        for sticker-line-height = (stickers-combined-row-height stickers)
+        do
+           (when (> endline height) (return))
+           (let ((step (+ line-height sticker-line-height)))
+             (when (> endline 0.0)
+               (unless drawing
+                 (setf drawing t)
+                 (draw:moveby scroll-x-offset (+ scroll-y-offset startline)))
+               (when (and (= row my) mouse-active
+                          (>= mx 0) (>= my 0))
+                 (multiple-value-bind (token start end) (line-token-under-xy buffer mx my)
+                   (when (and token start end)
+                     (draw-token-highlight token start end))))
+               (draw-line-buffer-line line)
+               #+nil
+               (doseq (s stickers)
+                 (draw-sticker s))
+               #+nil
+               (draw:translate 0.0 sticker-line-height))
+             (incf endline step)
+             (incf startline step))))))
+
+(defmethod draw-background ((node editor-node) (parent node))
+  (let ((editor (editor-node-editor node)))
+    (draw:with-graphics-group (d)
+      (if (.focused node)
+          (display-set-fill d 0.99 0.99 0.95 1.0)
+          (display-set-fill d 0.89 0.89 0.85 1.0))
+      (multiple-value-bind (w h) (node-layout-size node)
+        (draw:box 0.0 0.0 w h)
+        (draw-cursor editor d)
+        (draw:rgba-fill 0.3 0.2 0.8 1.0)
+        (draw:set-monospace)
+        (draw:set-font-size d (font-size *font*))
+        (editor-draw-lines editor 0.0 (.scroll-offset node) w h)))))
