@@ -149,7 +149,7 @@
            (.node editor)
            (make-instance 'poplist-node :editor editor :model poplist))))))
 
-(defmethod node:draw-background ((n poplist-node) (p node))
+(defmethod node:draw-background ((n poplist-node) (p node:node))
 (let ((m (.model n))
       (w (font:character-width #\Space)))
     (multiple-value-bind (w h) (node:node-layout-size n)
@@ -512,10 +512,10 @@
              (eq :keydown (.type event)))
     (handle-keydown (.editor enode) event)))
 
-(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.click))
+(defmethod node:wants-gesture ((n editor-node) (p node:node) (g node:gesture.click))
   t)
 
-(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.click))
+(defmethod node:handle-gesture ((n editor-node) (p node:node) (g node:gesture.click))
   (node:focus! n)
   (when-let (hook *editor-click-token-hook*)
     (when-let (token (line-token-under-xy (.text (.editor n))
@@ -524,16 +524,16 @@
       (let ((*package* (.package (.editor n))))
         (funcall hook (.x g) (.y g) token)))))
 
-(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.scroll))
+(defmethod node:wants-gesture ((n editor-node) (p node:node) (g node:gesture.scroll))
   t)
 
-(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.scroll))
+(defmethod node:handle-gesture ((n editor-node) (p node:node) (g node:gesture.scroll))
   (incf (.scroll-offset n) (.y g)))
 
-(defmethod node:wants-gesture ((n editor-node) (p node) (g node:gesture.mouse-hover))
+(defmethod node:wants-gesture ((n editor-node) (p node:node) (g node:gesture.mouse-hover))
   t)
 
-(defmethod node:handle-gesture ((n editor-node) (p node) (g node:gesture.mouse-hover))
+(defmethod node:handle-gesture ((n editor-node) (p node:node) (g node:gesture.mouse-hover))
   (let ((e (.editor n)))
     (if (eq :end (.phase g))
         (setf (.mouse-cursor-active e) nil)
@@ -582,7 +582,7 @@
 
 (defmethod draw-line-buffer-line ((line string))
   (draw:textat 0.0 0.0 line)
-  (draw:translate 0.0 (font:character-height #\Space)))
+  (draw:moveby 0.0 (font:character-height #\Space)))
 
 (defmethod editor-draw-lines ((editor editor) scroll-x-offset scroll-y-offset width height)
   (let ((buffer (editor-text editor))
@@ -618,13 +618,13 @@
                (doseq (s stickers)
                  (draw-sticker s))
                #+nil
-               (draw:translate 0.0 sticker-line-height))
+               (draw:moveby 0.0 sticker-line-height))
              (incf endline step)
              (incf startline step))))))
 
-(defmethod draw-background ((node editor-node) (parent node))
+(defmethod node:draw-background ((node editor-node) (parent node:node))
   (let ((editor (editor-node-editor node)))
-    (draw:with-graphics-group (d)
+    (draw:with-graphics-group ()
       (if (.focused node)
           (display-set-fill d 0.99 0.99 0.95 1.0)
           (display-set-fill d 0.89 0.89 0.85 1.0))
@@ -632,6 +632,5 @@
         (draw:box 0.0 0.0 w h)
         (draw-cursor editor d)
         (draw:rgba-fill 0.3 0.2 0.8 1.0)
-        (draw:set-monospace)
-        (draw:set-font-size d (font-size *font*))
-        (editor-draw-lines editor 0.0 (.scroll-offset node) w h)))))
+        (draw:with-font (font:*font*)
+          (editor-draw-lines editor 0.0 (.scroll-offset node) w h))))))
