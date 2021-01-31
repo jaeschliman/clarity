@@ -6,7 +6,8 @@
              #:insert-at
              #:ensure-length
              #:line-insert-at
-             #:line-delete-at))
+             #:line-delete-at
+             #:lines))
 (in-package :coffee.umbrella.string)
 
 (defun longest-line-length (string)
@@ -44,3 +45,8 @@
     (if (<= rstart (length string))
         (concatenate 'string left (subseq string rstart))
         left)))
+
+(defun lines (string)
+  (with-input-from-string (input string)
+    (loop for line = (read-line input nil nil)
+         while line collect line)))
