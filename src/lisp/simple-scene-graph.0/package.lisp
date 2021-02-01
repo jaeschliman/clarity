@@ -46,4 +46,5 @@
    #:handle-event
    #:wants-gesture
    #:handle-gesture
-   #:make-world))
+   #:make-world
+   #:modifier-state-update-for-key))
