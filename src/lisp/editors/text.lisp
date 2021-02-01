@@ -57,11 +57,11 @@
 (define-model line-buffer ()
   (lines))
 
-(defun make-editor (&key on-string
-                      (initial-row 0)
-                      (initial-col 0)
-                      package
-                      evaluator)
+(defun make-editor-node (&key on-string
+                           (initial-row 0)
+                           (initial-col 0)
+                           package
+                           evaluator)
   (let* ((node (make-instance 'editor-node))
          (buffer (line-buffer-from-string (or on-string "")))
          (editor (make-instance 'editor
@@ -70,13 +70,12 @@
                                 :cursor-color '(0.0 1.0 1.0 0.3)
                                 :cursor-blink nil
                                 :text buffer
-                                :transient-output nil
-                                :node node
                                 :package package)))
     (when evaluator (setf (.evaluator editor) evaluator))
+    (setf (.editor node) editor)
     (have editor node:update node)
     (have buffer node:update node)
-    editor))
+    node))
 
 (defmethod node:update ((e editor) (n editor-node) slot old-value new-value)
   (declare (ignore slot old-value new-value))
