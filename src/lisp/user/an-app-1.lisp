@@ -229,17 +229,7 @@
 
 (defmethod new-world ((app app) index)
   (let* ((world (node:make-world))
-         (package (make-user-package app index))
-         (text
-          (with-output-to-string (*standard-output*)
-            (format t ";;; Page ~A~%;;; ~A at ~A~%;;; Package: ~A~%;; Happy Hacking!~%~%"
-                    (1+ index)
-                    (lisp-implementation-type) (machine-instance)
-                    (package-name package))
-            (format t ";(desktop:chat :with :lisp :as :package-browser)~%")
-            (format t "(defvar *w (elt (.children *world*) 0))~%")
-            (format t "(snap-to-display-right *w)~%")
-            (format t "(setf (.evaluator *editor*) 'desktop:editor-pop-listener)~%"))))
+         (package (make-user-package app index)))
     ;; drawing errors are handled somewhat internally
     ;; by marking the offending node as 'bad' so we don't redraw it,
     (setf (.drawing-error-hook world)
@@ -249,11 +239,10 @@
             (format t "Error while drawing: ~A~%   Bad Node was: ~A~%" condition node)
             ;; TODO: should rename to 'skip-frame'
             (invoke-restart 'skip)))
-    world
-    #+nil
-    (node:with-active-world (world)
-      (prog1 world
-        (desktop:textedit :text text :initial-row 2 :package package)))))
+    (when-let (hook (.new-world-hook app))
+      (let ((*package* package))
+        (funcall hook world)))
+    world))
 
 (defmethod initialize-instance :after ((app app) &key)
   (let ((world-stack (app-worlds app)))
@@ -285,8 +274,8 @@
 ;; for example, we get stuck in the debugger for a few minutes figuring something out,
 ;; we /don't/ want the mbox getting stuffed with timer pulses and then suddenly
 ;; consuming them all in rapid sequence when we exit the debugger :o
-(defun create-demo-app ()
-  (let* ((app (make-instance 'app)))
+(defun create-demo-app (&key new-world-hook)
+  (let* ((app (make-instance 'app :new-world-hook new-world-hook)))
     (when *app* (stop! *app*))
     (setf *app* app)
     (let* ((supported-display-count (length (.displays app)))
@@ -369,12 +358,12 @@
         (stop-work mbox))
       (setf *app* nil))))
 
-(defun restart-app! ()
+(defun restart-app! (&key new-world-hook)
   (prog1 t
     (format t "[APP] restarting...~%")
     (quit-app!)
     (format t "[APP] starting new session...~%")
-    (create-demo-app)))
+    (create-demo-app :new-world-hook new-world-hook)))
 
 (defun app-active-display-count (app)
   (count-if-not 'null (app-displays app)))
@@ -410,8 +399,8 @@
          (mod (.modifier-state kb)))
     (match event
       ((list :keydown key)
-       (modifier-state-update-for-key mod key t)
-       (match (list (modifier-state-command mod) key)
+       (node:modifier-state-update-for-key mod key t)
+       (match (list (.command mod) key)
          ;; this is great for dev, but we don't want to 'flip the world' for everyone...
          ;; should be per-user
          ((list t "[") (world-stack-flip-back app))
@@ -420,7 +409,7 @@
           (maybe-send-keypress-to-world app (cadr event))
           (send-event-to-world app event :device (app-keyboard app)))))
       ((list :keyup key)
-       (modifier-state-update-for-key mod key nil)
+       (node:modifier-state-update-for-key mod key nil)
        (send-event-to-world app event :device (app-keyboard app))))))
 
 (defgeneric handle-display-input (app display raw-event))

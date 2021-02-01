@@ -29,7 +29,8 @@
    (worlds (make-instance 'world-stack))
    (package-list nil)
    (wants-display-refresh nil)
-   (inbox nil)))
+   (inbox nil)
+   (new-world-hook nil)))
 
 (defmacro with-step-app-bindings-and-restarts (() &body body)
   `(let ((*print-circle* t))
